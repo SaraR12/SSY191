@@ -17,6 +17,7 @@ typedef struct task {
     struct task* next;
 } task;
 
+/* Greate tasks. Begins as 0 */ 
 task* first_task = NULL;
 task* last_task = NULL;
 
@@ -79,9 +80,27 @@ void remove_all_tasks()
 /* This function should return the number of tasks added to the system */
 int nbr_of_tasks()
 {
+    // UPPGIFT 2 a)
+    /* What we want to do here ir to itterate through the tasks in the list and 
+    count how many number of tasks there is
+
+    First we declare a point variable since we want curr_task to have the same
+    structure as task
+    */
+    task* curr_task = fist_task; // Begin to count the first task
+
+    /* Declare current task */
+    int number_tasks = 0; // int since want to count whole numbers. Want to start at 0.
+    
     // Todo: Implement this function. You should not change anything outside this
     // function.
-	return 0;
+    /* While current_task is not 0 */
+    while (curr_task != NULL) {
+        number_tasks = number_tasks + 1; // Add 1 task
+        curr_task = curr_task->next; // Take the next task
+    }
+    return number_tasks;
+    
 }
 
 /* Print information about all tasks in the list
@@ -99,7 +118,7 @@ void print_tasks()
     }
 }
 
-/*
+/* UPPGIFT 2 c)
 Test if the tasks is schedulable according to the critera by Liu and Layland.
 Reference: C. L. Liu and J. Layland. Scheduling algorithms for multiprogramming
 in a hard real-time environment, Journal of the ACM, 20(1), 1973, pp. 46-61.
@@ -114,13 +133,29 @@ task.
 int schedulable_Liu_Layland()
 {
     // Todo: Implement this function
+    /* Want to calculate U = sum of(execution time (C) / Period time (T)) 
+    If U < N*(2^(1/N) - 1) then it is schedulable
+    */
+    int schedulable = SCHED_UNKNOWN;  // Pre define that the variable schedulable is unknown
 
-    // REMOVE
+    /* Start by calculate U */
+    double U = 0; // Declare U as a double
 
-    int schedulable = SCHED_UNKNOWN; // Change this
+    /* Now yse a while loop to calculate U */
+    while (curr_task != NULL) {
+        U = (double) U + (curr_task->WCET/ curr_task->period); // WCET = worst case execution time. period = period time
+        curr_task = curr_task -> next; // Take the next task, The last task is N 
+    }
+
+    /* Next up is to compare U with the bound to see if it's schedulable */
+    double Liu_Layland_Bound = N * (pow(2,1/N) - 1); // Bound
+    if (U < Liu_Layland_Bound) {
+        printf("Yes it is schedulable \n");
+        int schedulable = SCHED_YES;
+    }
     return schedulable;
-}
 
+}
 /*
 Test if the tasks is schedulable according to the exact response time analysisnd
 Layland.
@@ -132,12 +167,61 @@ Return:
 Assumptions: Priorities are unique, the list of tasks contains at least one
 task.
 */
-int schedulable_response_time_analysis()
-{
+
+int schedulable_response_time_analysis() 
+
+    /*  
+        Check if we have time to execute our task
+        We want to calculate the response task for all our tasks and then compare it to the 
+        deadline of the current task and see if  the response time is less than the deadlien.
+    */
+
+{   // C = WCET = worst case execution time
+    // I = is the interference 
     // Todo: Implement this function
     // The C library provides a ceiling function that returns the smallest integer
     // value greater than or equal to x: double ceil(double x)
-    int schedulable = SCHED_UNKNOWN; // Change this
+    int schedulable = SCHED_YES;  
+    /* 
+        Want it to be yes ast the begining as a initial
+        This will change later if it's not true
+    */
+
+    task* curr_task = first_task; // Assign curr_task as first one (i)
+    while (curr_task != NULL) {  // Not NULL
+        /* Initiate what we already know W_n and W_n_plus_one */
+        double W_n = 0; 
+        double W_n_plus_one = curr_task->WCET; // Initial value on the next is WCET
+    
+        while (W_n != W_n_plus_one){
+            W_n = W_n_plus_one;
+            W_n_plus_one = curr_task->WCET;
+
+            /*  
+                We want too calculate the recurance using the highest priority tasks period time
+                We want to loop through our tasks and takte the one with highest prio and
+                calcutate using the highest priority task
+            */
+
+            task* highest_prior_task = first_task; // Assign curr_task as first one (i)
+            // Loop through highest_prior_task (j)
+            while (highest_prior_task != NULL){
+                if (highest_prior_task->priority > curr_task->priority){
+                   W_n_plus_one  = W_n_plus_one + ceil((double)W_n / highest_prior_task->period) * highest_prior_task->WCET;
+                }
+                highest_prior_task = highest_prior_task->next; // Want the next task
+            }
+        }
+        /*
+            Now we have the response time W_n_plus_one (R), whish is the time it takes
+            to do our necessary tasks.
+            We said that it was schedulable and if deadline > R => not schedulable
+        */
+        if (curr_task->deadline > W_n_plus_one){
+            int schedulable = SCHED_NO; 
+        }
+       curr_task = curr_task->next; 
+    }
     return schedulable;
 }
 
@@ -163,7 +247,12 @@ int check_schedulable(int correct_response_Liu_Layland,
 
 /* Do not change or remove any code in this function.
    If you like you can add additional test cases.
-   TODO
+   TODO:
+   UPPGIFT 2 b)
+   To this function call two arguments are pro- vided, the first 
+   is the correct result for schedulability analysis using the Liu-Layland criteria 
+   and the second is the correct result for the response time analysis.
+   Analyze the examples for the five test-cases and fill in the correct answer
 */
 int check_tests()
 {
